@@ -1,11 +1,13 @@
 {
   "domain": "satel_integra",
-  "name": "Satel Integra",
-  "codeowners": ["@Tommatheussen"],
+  "name": "Satel Integra (Custom)",
+  "codeowners": ["@torchtarget"],
   "config_flow": true,
-  "documentation": "https://www.home-assistant.io/integrations/satel_integra",
+  "documentation": "https://github.com/torchtarget/ha_satel_integra",
   "integration_type": "device",
   "iot_class": "local_push",
+  "issue_tracker": "https://github.com/torchtarget/ha_satel_integra/issues",
   "loggers": ["satel_integra"],
-  "requirements": ["satel-integra==0.3.7"]
+  "requirements": ["satel-integra==0.3.7"],
+  "version": "0.1.0"
 }
