@@ -1,5 +1,5 @@
 {
-  "name": "Satel Integra",
+  "name": "Satel Integra Enhanced",
   "render_readme": true,
   "domains": ["satel_integra"],
   "homeassistant": "2024.1.0"

@@ -1,6 +1,6 @@
 {
   "domain": "satel_integra",
-  "name": "Satel Integra (Custom)",
+  "name": "Satel Integra Enhanced",
   "codeowners": ["@torchtarget"],
   "config_flow": true,
   "documentation": "https://github.com/torchtarget/ha_satel_integra",
