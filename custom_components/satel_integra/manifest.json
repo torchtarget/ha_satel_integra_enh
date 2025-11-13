@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/torchtarget/ha_satel_integra/issues",
   "loggers": ["satel_integra"],
   "requirements": ["satel-integra==0.3.7"],
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
