@@ -113,8 +113,20 @@ class SatelIntegraEntity(Entity):
         # Get the area registry and find/create the area
         area_reg = ar.async_get(self.hass)
 
+        # DEBUG: List all existing areas
+        all_areas = area_reg.async_list_areas()
+        _LOGGER.info(
+            "🔍 SATEL AREA DEBUG: Existing areas: %s",
+            [(a.id, a.name) for a in all_areas],
+        )
+
         # Try to find area by ID first (e.g., "technical_room")
         area_entry = area_reg.async_get_area(area_name)
+        _LOGGER.info(
+            "🔍 SATEL AREA DEBUG: Lookup by ID '%s' result: %s",
+            area_name,
+            area_entry.name if area_entry else "NOT FOUND",
+        )
 
         if area_entry:
             _LOGGER.info(
@@ -125,6 +137,11 @@ class SatelIntegraEntity(Entity):
         else:
             # Try to find by name (e.g., "Technical Room")
             area_entry = area_reg.async_get_area_by_name(area_name)
+            _LOGGER.info(
+                "🔍 SATEL AREA DEBUG: Lookup by NAME '%s' result: %s",
+                area_name,
+                area_entry.id if area_entry else "NOT FOUND",
+            )
 
             if area_entry:
                 _LOGGER.info(
