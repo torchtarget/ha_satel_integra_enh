@@ -110,16 +110,36 @@ class SatelIntegraEntity(Entity):
             area_name,
         )
 
-        # Get the area registry and create/get the area
+        # Get the area registry and find/create the area
         area_reg = ar.async_get(self.hass)
-        area_entry = area_reg.async_get_or_create(area_name)
 
-        _LOGGER.info(
-            "🟢 SATEL AREA: Area '%s' ready (ID: %s, exists: %s)",
-            area_name,
-            area_entry.id,
-            area_entry.name == area_name,
-        )
+        # Try to find area by ID first (e.g., "technical_room")
+        area_entry = area_reg.async_get_area(area_name)
+
+        if area_entry:
+            _LOGGER.info(
+                "🟢 SATEL AREA: Found existing area by ID '%s' (name: '%s')",
+                area_name,
+                area_entry.name,
+            )
+        else:
+            # Try to find by name (e.g., "Technical Room")
+            area_entry = area_reg.async_get_area_by_name(area_name)
+
+            if area_entry:
+                _LOGGER.info(
+                    "🟢 SATEL AREA: Found existing area by NAME '%s' (ID: %s)",
+                    area_name,
+                    area_entry.id,
+                )
+            else:
+                # Create new area if it doesn't exist
+                area_entry = area_reg.async_create(area_name)
+                _LOGGER.info(
+                    "🆕 SATEL AREA: Created new area '%s' (ID: %s)",
+                    area_name,
+                    area_entry.id,
+                )
 
         # Get the device registry and find our device
         device_reg = dr.async_get(self.hass)
