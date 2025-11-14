@@ -42,23 +42,27 @@ async def async_setup_entry(
     controller = config_entry.runtime_data
 
     # Get all zone subentries
-    zone_subentries = filter(
-        lambda entry: entry.subentry_type == SUBENTRY_TYPE_ZONE,
-        config_entry.subentries.values(),
+    zone_subentries = list(
+        filter(
+            lambda entry: entry.subentry_type == SUBENTRY_TYPE_ZONE,
+            config_entry.subentries.values(),
+        )
     )
 
-    # Test each zone for temperature capability
-    temperature_sensors = []
-    for subentry in zone_subentries:
+    if not zone_subentries:
+        return
+
+    async def test_zone_temperature(subentry: ConfigSubentry) -> ConfigSubentry | None:
+        """Test if a zone supports temperature and return subentry if it does."""
         zone_num: int = subentry.data[CONF_ZONE_NUMBER]
 
         _LOGGER.debug("Testing zone %s for temperature capability", zone_num)
 
         try:
-            # Try to read temperature with a short timeout (1 second for detection)
+            # Try to read temperature with a 2-second timeout for detection
             temperature = await asyncio.wait_for(
                 controller.get_zone_temperature(zone_num),
-                timeout=1.0
+                timeout=2.0
             )
 
             if temperature is not None:
@@ -67,31 +71,51 @@ async def async_setup_entry(
                     zone_num,
                     subentry.data[CONF_NAME],
                 )
-                temperature_sensors.append(
-                    SatelIntegraTemperatureSensor(
-                        controller,
-                        config_entry.entry_id,
-                        subentry,
-                        zone_num,
-                    )
-                )
+                return subentry
             else:
                 _LOGGER.debug("Zone %s does not support temperature", zone_num)
+                return None
 
         except asyncio.TimeoutError:
             _LOGGER.debug(
                 "Zone %s does not support temperature (timeout)",
                 zone_num,
             )
+            return None
         except Exception as ex:
             _LOGGER.debug(
                 "Zone %s temperature check failed: %s",
                 zone_num,
                 ex,
             )
+            return None
+
+    # Test all zones in parallel to avoid sequential delay
+    _LOGGER.info("Testing %d zones for temperature capability in parallel", len(zone_subentries))
+    results = await asyncio.gather(
+        *[test_zone_temperature(subentry) for subentry in zone_subentries],
+        return_exceptions=True
+    )
+
+    # Create temperature sensors for zones that support it
+    temperature_sensors = []
+    for subentry in results:
+        if isinstance(subentry, ConfigSubentry):
+            zone_num: int = subentry.data[CONF_ZONE_NUMBER]
+            temperature_sensors.append(
+                SatelIntegraTemperatureSensor(
+                    controller,
+                    config_entry.entry_id,
+                    subentry,
+                    zone_num,
+                )
+            )
 
     if temperature_sensors:
+        _LOGGER.info("Created %d temperature sensors", len(temperature_sensors))
         async_add_entities(temperature_sensors)
+    else:
+        _LOGGER.info("No temperature-capable zones detected")
 
 
 class SatelIntegraTemperatureSensor(SatelIntegraEntity, SensorEntity):
