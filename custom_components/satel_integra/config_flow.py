@@ -127,7 +127,9 @@ class SatelConfigFlow(ConfigFlow, domain=DOMAIN):
             self._async_abort_entries_match({CONF_HOST: user_input[CONF_HOST]})
 
             valid = await self.test_connection(
-                user_input[CONF_HOST], user_input[CONF_PORT]
+                user_input[CONF_HOST],
+                user_input[CONF_PORT],
+                user_input.get(CONF_INTEGRATION_KEY),
             )
 
             if valid:
@@ -155,7 +157,9 @@ class SatelConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle a flow initialized by import."""
 
         valid = await self.test_connection(
-            import_config[CONF_HOST], import_config.get(CONF_PORT, DEFAULT_PORT)
+            import_config[CONF_HOST],
+            import_config.get(CONF_PORT, DEFAULT_PORT),
+            import_config.get(CONF_INTEGRATION_KEY),
         )
 
         if valid:
@@ -243,9 +247,11 @@ class SatelConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_abort(reason="cannot_connect")
 
-    async def test_connection(self, host: str, port: int) -> bool:
+    async def test_connection(
+        self, host: str, port: int, integration_key: str | None = None
+    ) -> bool:
         """Test a connection to the Satel alarm."""
-        controller = AsyncSatel(host, port)
+        controller = AsyncSatel(host, port, integration_key=integration_key)
 
         result = await controller.connect()
 
