@@ -83,13 +83,13 @@ satel_integra:
       name: "Inside"
       arm_home_mode: 1
 
-  # Configure zones with optional area assignment and temperature monitoring
+  # Configure zones with optional area assignment
   zones:
     1: { name: "Front Door", type: door, area: "entry" }
     2: { name: "Kitchen Motion", type: motion, area: "kitchen" }
     3: { name: "Living Room Window", type: window, area: "living_room" }
     4: { name: "Basement Smoke Detector", type: smoke, area: "basement" }
-    5: { name: "Outdoor Temperature", type: motion, area: "garden", temperature: true }
+    5: { name: "Outdoor Temperature", type: motion, area: "garden" }
     # ... add all your zones
 
   # Configure outputs (read-only monitoring)
@@ -116,22 +116,23 @@ satel_integra:
 - `tamper` - Tamper sensors
 - `panic` - Panic buttons
 
-**Temperature Monitoring:**
-Add `temperature: true` to any zone configuration to enable temperature monitoring. This creates an additional temperature sensor entity for zones that support temperature readings:
+**Temperature Monitoring (Automatic):**
+Temperature sensors are automatically detected and created for zones that support temperature readings. No configuration is required!
+- During setup, each zone is tested for temperature capability
+- If a zone supports temperature, a temperature sensor entity is automatically created
 - Temperature is reported in Celsius
 - Sensor polls every 60 seconds
 - Temperature range: -55°C to +125°C (0.5°C increments)
-- Non-temperature zones will show as unavailable
 
-Example:
+Example - if zone 10 has a temperature sensor:
 ```yaml
 zones:
-  10: { name: "Basement", type: motion, area: "basement", temperature: true }
+  10: { name: "Basement", type: motion, area: "basement" }
 ```
 
-This creates two entities:
+This automatically creates:
 - `binary_sensor.basement` - Motion sensor
-- `sensor.basement_temperature` - Temperature reading
+- `sensor.basement_temperature` - Temperature sensor (auto-detected)
 
 After adding the configuration, restart Home Assistant to load the changes.
 

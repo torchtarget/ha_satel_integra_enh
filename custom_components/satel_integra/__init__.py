@@ -33,7 +33,6 @@ from .const import (
     CONF_SWITCHABLE_OUTPUT_NUMBER,
     CONF_SWITCHABLE_OUTPUTS,
     CONF_ZONE_NUMBER,
-    CONF_ZONE_TEMPERATURE,
     CONF_ZONE_TYPE,
     CONF_ZONES,
     DEFAULT_CONF_ARM_HOME_MODE,
@@ -46,7 +45,6 @@ from .const import (
     SUBENTRY_TYPE_OUTPUT,
     SUBENTRY_TYPE_PARTITION,
     SUBENTRY_TYPE_SWITCHABLE_OUTPUT,
-    SUBENTRY_TYPE_TEMPERATURE_ZONE,
     SUBENTRY_TYPE_ZONE,
     ZONES,
     SatelConfigEntry,
@@ -62,7 +60,6 @@ ZONE_SCHEMA = vol.Schema(
         vol.Required(CONF_NAME): cv.string,
         vol.Optional(CONF_ZONE_TYPE, default=DEFAULT_ZONE_TYPE): cv.string,
         vol.Optional(CONF_AREA): cv.string,
-        vol.Optional(CONF_ZONE_TEMPERATURE, default=False): cv.boolean,
     }
 )
 EDITABLE_OUTPUT_SCHEMA = vol.Schema(

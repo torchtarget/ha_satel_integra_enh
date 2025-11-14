@@ -14,13 +14,13 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigSubentry
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import CONF_NAME, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
     CONF_ZONE_NUMBER,
-    SUBENTRY_TYPE_TEMPERATURE_ZONE,
+    SUBENTRY_TYPE_ZONE,
     SatelConfigEntry,
 )
 from .entity import SatelIntegraEntity
@@ -37,29 +37,61 @@ async def async_setup_entry(
     config_entry: SatelConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Set up the Satel Integra temperature sensor devices."""
+    """Set up the Satel Integra temperature sensor devices with auto-detection."""
 
     controller = config_entry.runtime_data
 
-    temperature_subentries = filter(
-        lambda entry: entry.subentry_type == SUBENTRY_TYPE_TEMPERATURE_ZONE,
+    # Get all zone subentries
+    zone_subentries = filter(
+        lambda entry: entry.subentry_type == SUBENTRY_TYPE_ZONE,
         config_entry.subentries.values(),
     )
 
-    for subentry in temperature_subentries:
+    # Test each zone for temperature capability
+    temperature_sensors = []
+    for subentry in zone_subentries:
         zone_num: int = subentry.data[CONF_ZONE_NUMBER]
 
-        async_add_entities(
-            [
-                SatelIntegraTemperatureSensor(
-                    controller,
-                    config_entry.entry_id,
-                    subentry,
+        _LOGGER.debug("Testing zone %s for temperature capability", zone_num)
+
+        try:
+            # Try to read temperature with a short timeout (1 second for detection)
+            temperature = await asyncio.wait_for(
+                controller.get_zone_temperature(zone_num),
+                timeout=1.0
+            )
+
+            if temperature is not None:
+                _LOGGER.info(
+                    "Zone %s ('%s') supports temperature - creating sensor",
                     zone_num,
+                    subentry.data[CONF_NAME],
                 )
-            ],
-            config_subentry_id=subentry.subentry_id,
-        )
+                temperature_sensors.append(
+                    SatelIntegraTemperatureSensor(
+                        controller,
+                        config_entry.entry_id,
+                        subentry,
+                        zone_num,
+                    )
+                )
+            else:
+                _LOGGER.debug("Zone %s does not support temperature", zone_num)
+
+        except asyncio.TimeoutError:
+            _LOGGER.debug(
+                "Zone %s does not support temperature (timeout)",
+                zone_num,
+            )
+        except Exception as ex:
+            _LOGGER.debug(
+                "Zone %s temperature check failed: %s",
+                zone_num,
+                ex,
+            )
+
+    if temperature_sensors:
+        async_add_entities(temperature_sensors)
 
 
 class SatelIntegraTemperatureSensor(SatelIntegraEntity, SensorEntity):
@@ -84,6 +116,13 @@ class SatelIntegraTemperatureSensor(SatelIntegraEntity, SensorEntity):
             subentry,
             zone_number,
         )
+
+        # Override unique_id to make it specific to temperature sensor
+        # Use "temperature" suffix to avoid conflict with zone binary sensor
+        self._attr_unique_id = f"{config_entry_id}_zones_{zone_number}_temperature"
+
+        # Update entity name to include "Temperature"
+        self._attr_name = "Temperature"
 
     async def async_update(self) -> None:
         """Fetch new temperature value from the zone."""

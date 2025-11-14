@@ -25,14 +25,11 @@ CONF_ARM_HOME_MODE = "arm_home_mode"
 CONF_INTEGRATION_KEY = "integration_key"
 CONF_ZONE_TYPE = "type"
 CONF_AREA = "area"
-CONF_ZONE_TEMPERATURE = "temperature"
 CONF_ZONES = "zones"
 CONF_OUTPUTS = "outputs"
 CONF_SWITCHABLE_OUTPUTS = "switchable_outputs"
 
 ZONES = "zones"
-
-SUBENTRY_TYPE_TEMPERATURE_ZONE = "temperature_zone"
 
 SIGNAL_PANEL_MESSAGE = "satel_integra.panel_message"
 

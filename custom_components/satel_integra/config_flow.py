@@ -33,7 +33,6 @@ from .const import (
     CONF_SWITCHABLE_OUTPUT_NUMBER,
     CONF_SWITCHABLE_OUTPUTS,
     CONF_ZONE_NUMBER,
-    CONF_ZONE_TEMPERATURE,
     CONF_ZONE_TYPE,
     CONF_ZONES,
     DEFAULT_CONF_ARM_HOME_MODE,
@@ -42,7 +41,6 @@ from .const import (
     SUBENTRY_TYPE_OUTPUT,
     SUBENTRY_TYPE_PARTITION,
     SUBENTRY_TYPE_SWITCHABLE_OUTPUT,
-    SUBENTRY_TYPE_TEMPERATURE_ZONE,
     SUBENTRY_TYPE_ZONE,
     SatelConfigEntry,
 )
@@ -212,30 +210,6 @@ class SatelConfigFlow(ConfigFlow, domain=DOMAIN):
                         "data": zone_subentry_data,
                     }
                 )
-
-                # Create temperature sensor subentry if zone has temperature enabled
-                if zone_data.get(CONF_ZONE_TEMPERATURE, False):
-                    temp_zone_subentry_data = {
-                        CONF_NAME: f"{zone_data[CONF_NAME]} Temperature",
-                        CONF_ZONE_NUMBER: zone_number,
-                    }
-                    # Add area if specified for the temperature sensor too
-                    if CONF_AREA in zone_data:
-                        temp_zone_subentry_data[CONF_AREA] = zone_data[CONF_AREA]
-
-                    subentries.append(
-                        {
-                            "subentry_type": SUBENTRY_TYPE_TEMPERATURE_ZONE,
-                            "title": f"{zone_data[CONF_NAME]} Temperature ({zone_number})",
-                            "unique_id": f"{SUBENTRY_TYPE_TEMPERATURE_ZONE}_{zone_number}",
-                            "data": temp_zone_subentry_data,
-                        }
-                    )
-                    _LOGGER.info(
-                        "🌡️ YAML IMPORT: Zone %s ('%s') has temperature monitoring enabled",
-                        zone_number,
-                        zone_data[CONF_NAME],
-                    )
 
             for output_number, output_data in import_config.get(
                 CONF_OUTPUTS, {}
