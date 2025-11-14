@@ -223,8 +223,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SatelConfigEntry) -> boo
     entry.async_on_unload(entry.add_update_listener(update_listener))
     entry.async_on_unload(hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _close))
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
+    # Register callbacks before starting
     @callback
     def alarm_status_update_callback():
         """Send status update received from alarm to Home Assistant."""
@@ -249,7 +248,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SatelConfigEntry) -> boo
         output_changed_callback=outputs_update_callback,
     )
 
+    # Start controller and establish connection BEFORE loading platforms
+    # This ensures temperature detection in sensor.py can communicate with the alarm
     await controller.start(enable_monitoring=True)
+
+    # Now load platforms - sensor.py can now successfully detect temperature zones
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
 
