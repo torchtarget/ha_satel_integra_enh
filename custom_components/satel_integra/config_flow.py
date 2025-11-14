@@ -23,6 +23,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv, selector
 
 from .const import (
+    CONF_AREA,
     CONF_ARM_HOME_MODE,
     CONF_DEVICE_PARTITIONS,
     CONF_INTEGRATION_KEY,
@@ -184,51 +185,72 @@ class SatelConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
 
             for zone_number, zone_data in import_config.get(CONF_ZONES, {}).items():
+                zone_subentry_data = {
+                    CONF_NAME: zone_data[CONF_NAME],
+                    CONF_ZONE_NUMBER: zone_number,
+                    CONF_ZONE_TYPE: zone_data.get(
+                        CONF_ZONE_TYPE, BinarySensorDeviceClass.MOTION
+                    ),
+                }
+                # Add area if specified
+                if CONF_AREA in zone_data:
+                    zone_subentry_data[CONF_AREA] = zone_data[CONF_AREA]
+                    _LOGGER.info(
+                        "📍 YAML IMPORT: Zone %s ('%s') has area='%s'",
+                        zone_number,
+                        zone_data[CONF_NAME],
+                        zone_data[CONF_AREA],
+                    )
+
                 subentries.append(
                     {
                         "subentry_type": SUBENTRY_TYPE_ZONE,
                         "title": f"{zone_data[CONF_NAME]} ({zone_number})",
                         "unique_id": f"{SUBENTRY_TYPE_ZONE}_{zone_number}",
-                        "data": {
-                            CONF_NAME: zone_data[CONF_NAME],
-                            CONF_ZONE_NUMBER: zone_number,
-                            CONF_ZONE_TYPE: zone_data.get(
-                                CONF_ZONE_TYPE, BinarySensorDeviceClass.MOTION
-                            ),
-                        },
+                        "data": zone_subentry_data,
                     }
                 )
 
             for output_number, output_data in import_config.get(
                 CONF_OUTPUTS, {}
             ).items():
+                output_subentry_data = {
+                    CONF_NAME: output_data[CONF_NAME],
+                    CONF_OUTPUT_NUMBER: output_number,
+                    CONF_ZONE_TYPE: output_data.get(
+                        CONF_ZONE_TYPE, BinarySensorDeviceClass.MOTION
+                    ),
+                }
+                # Add area if specified
+                if CONF_AREA in output_data:
+                    output_subentry_data[CONF_AREA] = output_data[CONF_AREA]
+
                 subentries.append(
                     {
                         "subentry_type": SUBENTRY_TYPE_OUTPUT,
                         "title": f"{output_data[CONF_NAME]} ({output_number})",
                         "unique_id": f"{SUBENTRY_TYPE_OUTPUT}_{output_number}",
-                        "data": {
-                            CONF_NAME: output_data[CONF_NAME],
-                            CONF_OUTPUT_NUMBER: output_number,
-                            CONF_ZONE_TYPE: output_data.get(
-                                CONF_ZONE_TYPE, BinarySensorDeviceClass.MOTION
-                            ),
-                        },
+                        "data": output_subentry_data,
                     }
                 )
 
             for switchable_output_number, switchable_output_data in import_config.get(
                 CONF_SWITCHABLE_OUTPUTS, {}
             ).items():
+                switchable_output_subentry_data = {
+                    CONF_NAME: switchable_output_data[CONF_NAME],
+                    CONF_SWITCHABLE_OUTPUT_NUMBER: switchable_output_number,
+                }
+                # Add area if specified
+                if CONF_AREA in switchable_output_data:
+                    switchable_output_subentry_data[CONF_AREA] = switchable_output_data[CONF_AREA]
+
                 subentries.append(
                     {
                         "subentry_type": SUBENTRY_TYPE_SWITCHABLE_OUTPUT,
                         "title": f"{switchable_output_data[CONF_NAME]} ({switchable_output_number})",
                         "unique_id": f"{SUBENTRY_TYPE_SWITCHABLE_OUTPUT}_{switchable_output_number}",
-                        "data": {
-                            CONF_NAME: switchable_output_data[CONF_NAME],
-                            CONF_SWITCHABLE_OUTPUT_NUMBER: switchable_output_number,
-                        },
+                        "data": switchable_output_subentry_data,
                     }
                 )
 
