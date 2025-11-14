@@ -33,7 +33,7 @@ This is an enhanced version of the Satel Integra integration, based on the offic
 2. Go to "Integrations" section
 3. Click the three dots menu (⋮) in the top right
 4. Select "Custom repositories"
-5. Add repository URL: `https://github.com/torchtarget/ha_satel_integra`
+5. Add repository URL: `https://github.com/torchtarget/ha_satel_integra_enh`
 6. Select category: "Integration"
 7. Click "Add"
 8. Find "Satel Integra Enhanced" in the list and click "Download"

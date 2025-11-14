@@ -3,10 +3,10 @@
   "name": "Satel Integra Enhanced",
   "codeowners": ["@torchtarget"],
   "config_flow": true,
-  "documentation": "https://github.com/torchtarget/ha_satel_integra",
+  "documentation": "https://github.com/torchtarget/ha_satel_integra_enh",
   "integration_type": "device",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/torchtarget/ha_satel_integra/issues",
+  "issue_tracker": "https://github.com/torchtarget/ha_satel_integra_enh/issues",
   "loggers": ["satel_integra"],
   "requirements": ["satel-integra==0.3.7"],
   "version": "0.1.1"
