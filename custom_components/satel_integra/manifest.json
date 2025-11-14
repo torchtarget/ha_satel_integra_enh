@@ -8,6 +8,6 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/torchtarget/ha_satel_integra_enh/issues",
   "loggers": ["satel_integra"],
-  "requirements": ["satel_integra @ git+https://github.com/c-soft/satel_integra.git@master"],
-  "version": "0.2.0"
+  "requirements": ["satel_integra @ git+https://github.com/c-soft/satel_integra.git@75606987b13c8b83f825c6b7641888e8a2e48d19"],
+  "version": "0.2.1"
 }
