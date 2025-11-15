@@ -26,6 +26,7 @@ from .const import (
     CONF_AREA,
     CONF_ARM_HOME_MODE,
     CONF_DEVICE_PARTITIONS,
+    CONF_ENABLE_TEMPERATURE,
     CONF_INTEGRATION_KEY,
     CONF_OUTPUT_NUMBER,
     CONF_OUTPUTS,
@@ -85,6 +86,7 @@ ZONE_AND_OUTPUT_SCHEMA = vol.Schema(
                 sort=True,
             ),
         ),
+        vol.Optional(CONF_ENABLE_TEMPERATURE, default=False): selector.BooleanSelector(),
     }
 )
 
@@ -191,6 +193,7 @@ class SatelConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_ZONE_TYPE: zone_data.get(
                         CONF_ZONE_TYPE, BinarySensorDeviceClass.MOTION
                     ),
+                    CONF_ENABLE_TEMPERATURE: zone_data.get(CONF_ENABLE_TEMPERATURE, False),
                 }
                 # Add area if specified
                 if CONF_AREA in zone_data:
@@ -220,6 +223,7 @@ class SatelConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_ZONE_TYPE: output_data.get(
                         CONF_ZONE_TYPE, BinarySensorDeviceClass.MOTION
                     ),
+                    CONF_ENABLE_TEMPERATURE: output_data.get(CONF_ENABLE_TEMPERATURE, False),
                 }
                 # Add area if specified
                 if CONF_AREA in output_data:

@@ -18,6 +18,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import (
+    CONF_ENABLE_TEMPERATURE,
     CONF_OUTPUT_NUMBER,
     CONF_ZONE_NUMBER,
     CONF_ZONE_TYPE,
@@ -41,15 +42,15 @@ TEMPERATURE_REQUEST_DELAY = 10
 
 async def _temperature_polling_task(
     hass: HomeAssistant,
-    motion_zones: list[SatelIntegraBinarySensor],
+    temperature_zones: list[SatelIntegraBinarySensor],
 ) -> None:
-    """Background task to sequentially poll temperature from motion sensor zones.
+    """Background task to sequentially poll temperature from configured zones.
 
     This task runs independently of HA's polling mechanism to avoid blocking.
     Requests are sent sequentially with 10-second delays to prevent overwhelming
-    the alarm panel connection.
+    the alarm panel connection. Only zones with enable_temperature=True are polled.
     """
-    _LOGGER.info("Temperature polling task started for %d zones", len(motion_zones))
+    _LOGGER.info("Temperature polling task started for %d zones", len(temperature_zones))
 
     # Wait 20 seconds before first poll to allow system to stabilize
     first_poll = True
@@ -64,9 +65,9 @@ async def _temperature_polling_task(
                 # Wait full interval between subsequent polls
                 await asyncio.sleep(TEMPERATURE_SCAN_INTERVAL.total_seconds())
 
-            _LOGGER.debug("Starting temperature polling cycle for %d zones", len(motion_zones))
+            _LOGGER.debug("Starting temperature polling cycle for %d zones", len(temperature_zones))
 
-            for entity in motion_zones:
+            for entity in temperature_zones:
                 # Skip zones that have been disabled (no temperature support)
                 if not entity._temperature_enabled:
                     continue
@@ -202,18 +203,18 @@ async def async_setup_entry(
         )
 
     # Start background task for sequential temperature polling
-    # Only for motion sensor zones (IR sensors with temperature capability)
-    motion_zones = [
+    # Only for zones where temperature has been explicitly enabled
+    temperature_zones = [
         entity for entity in zone_entities
-        if entity.device_class == BinarySensorDeviceClass.MOTION
+        if entity._temperature_enabled
     ]
 
-    if motion_zones:
+    if temperature_zones:
         _LOGGER.info(
-            "Starting background temperature polling for %d motion sensor zones",
-            len(motion_zones)
+            "Starting background temperature polling for %d zones",
+            len(temperature_zones)
         )
-        asyncio.create_task(_temperature_polling_task(hass, motion_zones))
+        asyncio.create_task(_temperature_polling_task(hass, temperature_zones))
 
 
 class SatelIntegraBinarySensor(SatelIntegraEntity, BinarySensorEntity):
@@ -241,11 +242,11 @@ class SatelIntegraBinarySensor(SatelIntegraEntity, BinarySensorEntity):
         self._temperature: float | None = None
 
         # Temperature polling is handled by background task, not entity polling
-        # Motion sensors start with temperature polling enabled
+        # Only enabled if explicitly configured in zone settings
         # Background task will disable if zone doesn't respond with temperature
         self._temperature_enabled = (
             react_to_signal == SIGNAL_ZONES_UPDATED
-            and device_class == BinarySensorDeviceClass.MOTION
+            and subentry.data.get(CONF_ENABLE_TEMPERATURE, False)
         )
 
     async def async_added_to_hass(self) -> None:

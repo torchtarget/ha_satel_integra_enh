@@ -8,7 +8,7 @@ This is an enhanced version of the Satel Integra integration, based on the offic
 
 ## Current Status
 
-**v0.5.0 - Temperature Monitoring!** - Now supports reading temperature from temperature-enabled zones.
+**v0.8.0 - Manual Temperature Configuration** - Temperature monitoring now uses explicit configuration to avoid connection issues.
 
 - Based on official HA core satel_integra component
 - Uses enhanced `satel_integra_enh` library with extended protocol support
@@ -24,7 +24,7 @@ This is an enhanced version of the Satel Integra integration, based on the offic
 
 - **Encrypted Communication**: Supports integration key for secure communication with your alarm panel
 - **Automatic Area Assignment**: Assign devices to Home Assistant areas directly from configuration
-- **Temperature Monitoring**: Read temperature from zones with temperature sensors
+- **Temperature Monitoring**: Optionally read temperature from zones with temperature sensors (manual configuration required)
 - **YAML Configuration**: Configure all zones, partitions, and outputs via YAML for easy bulk setup
 - **Alarm Control Panel**: Arm/disarm partitions with different modes (Away, Home)
 - **Binary Sensors**: Monitor zone states (doors, windows, motion detectors, etc.)
@@ -116,23 +116,25 @@ satel_integra:
 - `tamper` - Tamper sensors
 - `panic` - Panic buttons
 
-**Temperature Monitoring (Automatic):**
-Temperature sensors are automatically detected and created for zones that support temperature readings. No configuration is required!
-- During setup, each zone is tested for temperature capability
-- If a zone supports temperature, a temperature sensor entity is automatically created
+**Temperature Monitoring (Manual Configuration):**
+Temperature monitoring must be explicitly enabled for zones that support it. This prevents connection issues with zones that don't have temperature sensors.
+- Add `enable_temperature: true` to zones with temperature sensors
+- Temperature is reported as an extra attribute on the binary sensor
 - Temperature is reported in Celsius
-- Sensor polls every 60 seconds
+- Polls every 5 minutes to avoid overwhelming the connection
 - Temperature range: -55°C to +125°C (0.5°C increments)
 
-Example - if zone 10 has a temperature sensor:
+Example - enable temperature for zone 10:
 ```yaml
 zones:
-  10: { name: "Basement", type: motion, area: "basement" }
+  10: { name: "Basement", type: motion, area: "basement", enable_temperature: true }
 ```
 
-This automatically creates:
-- `binary_sensor.basement` - Motion sensor
-- `sensor.basement_temperature` - Temperature sensor (auto-detected)
+This creates:
+- `binary_sensor.basement` - Motion sensor with temperature attribute
+- Access temperature via `state_attr('binary_sensor.basement', 'temperature')`
+
+**Important**: Only enable temperature for zones you KNOW have temperature sensors (like ATD-100 detectors). Enabling it for zones without sensors can cause connection issues.
 
 After adding the configuration, restart Home Assistant to load the changes.
 
@@ -147,6 +149,7 @@ After adding the configuration, restart Home Assistant to load the changes.
    - **Integration Key** (optional): Encryption key for secure communication
 4. Click **Submit**
 5. Add partitions, zones, outputs, and switchable outputs as needed
+6. When adding zones with temperature sensors (like ATD-100), enable the **"Enable Temperature"** toggle
 
 **Note**: UI configuration does not support area assignment. Use YAML configuration for automatic area assignment.
 
