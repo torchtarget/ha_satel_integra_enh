@@ -8,7 +8,7 @@ This is an enhanced version of the Satel Integra integration, based on the offic
 
 ## Current Status
 
-**v0.8.0 - Manual Temperature Configuration** - Temperature monitoring now uses explicit configuration to avoid connection issues.
+**v0.9.0 - Separate Temperature Sensors** - Temperature monitoring now creates dedicated sensor entities for better usability.
 
 - Based on official HA core satel_integra component
 - Uses enhanced `satel_integra_enh` library with extended protocol support
@@ -119,20 +119,23 @@ satel_integra:
 **Temperature Monitoring (Manual Configuration):**
 Temperature monitoring must be explicitly enabled for zones that support it. This prevents connection issues with zones that don't have temperature sensors.
 - Add `enable_temperature: true` to zones with temperature sensors
-- Temperature is reported as an extra attribute on the binary sensor
-- Temperature is reported in Celsius
+- Creates a dedicated temperature sensor entity
+- Temperature is reported in Celsius with proper device class
 - Polls every 5 minutes to avoid overwhelming the connection
+- Supports history graphs, statistics, and long-term data
 - Temperature range: -55°C to +125°C (0.5°C increments)
 
 Example - enable temperature for zone 10:
 ```yaml
 zones:
-  10: { name: "Basement", type: motion, area: "basement", enable_temperature: true }
+  10: { name: "Basement Motion", type: motion, area: "basement", enable_temperature: true }
 ```
 
-This creates:
-- `binary_sensor.basement` - Motion sensor with temperature attribute
-- Access temperature via `state_attr('binary_sensor.basement', 'temperature')`
+This creates TWO entities under the same device:
+- `binary_sensor.basement_motion` - Motion detection (on/off)
+- `sensor.basement_motion_temperature` - Temperature reading (25.5°C)
+
+Both entities appear under the same device in Home Assistant and can be used in automations, history graphs, and dashboards.
 
 **Important**: Only enable temperature for zones you KNOW have temperature sensors (like ATD-100 detectors). Enabling it for zones without sensors can cause connection issues.
 
