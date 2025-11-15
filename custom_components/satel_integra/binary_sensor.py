@@ -51,10 +51,18 @@ async def _temperature_polling_task(
     """
     _LOGGER.info("Temperature polling task started for %d zones", len(motion_zones))
 
+    # Wait 20 seconds before first poll to allow system to stabilize
+    first_poll = True
+
     while True:
         try:
-            # Wait for initial interval before first poll
-            await asyncio.sleep(TEMPERATURE_SCAN_INTERVAL.total_seconds())
+            if first_poll:
+                _LOGGER.debug("Waiting 20 seconds before first temperature poll")
+                await asyncio.sleep(20)
+                first_poll = False
+            else:
+                # Wait full interval between subsequent polls
+                await asyncio.sleep(TEMPERATURE_SCAN_INTERVAL.total_seconds())
 
             _LOGGER.debug("Starting temperature polling cycle for %d zones", len(motion_zones))
 
