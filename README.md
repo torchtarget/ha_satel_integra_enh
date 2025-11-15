@@ -8,7 +8,7 @@ This is an enhanced version of the Satel Integra integration, based on the offic
 
 ## Current Status
 
-**v0.9.0 - Separate Temperature Sensors** - Temperature monitoring now creates dedicated sensor entities for better usability.
+**v0.9.1 - Robust Temperature Monitoring** - Added automatic connection recovery if temperature polling causes communication issues.
 
 - Based on official HA core satel_integra component
 - Uses enhanced `satel_integra_enh` library with extended protocol support
@@ -138,6 +138,15 @@ This creates TWO entities under the same device:
 Both entities appear under the same device in Home Assistant and can be used in automations, history graphs, and dashboards.
 
 **Important**: Only enable temperature for zones you KNOW have temperature sensors (like ATD-100 detectors). Enabling it for zones without sensors can cause connection issues.
+
+**Robustness Features:**
+If you accidentally enable temperature on a zone without a sensor:
+- The integration automatically detects the issue (timeout or no response)
+- Disables temperature polling for that specific zone
+- Verifies connection health and waits for automatic recovery (60 seconds)
+- If auto-recovery fails, manually reconnects to restore all functionality
+- Continues polling other zones without interruption
+- All other integration features (motion sensors, alarm panel) remain operational
 
 After adding the configuration, restart Home Assistant to load the changes.
 

@@ -34,6 +34,81 @@ TEMPERATURE_SCAN_INTERVAL = timedelta(minutes=5)
 # Delay between sequential temperature requests (10 seconds)
 TEMPERATURE_REQUEST_DELAY = 10
 
+# Maximum time to wait for connection recovery (2 minutes)
+CONNECTION_RECOVERY_TIMEOUT = 120
+
+
+async def _verify_and_recover_connection(satel: AsyncSatel, zone_number: int) -> bool:
+    """Verify connection health and wait for recovery if needed.
+
+    Returns True if connection is healthy or successfully recovered, False otherwise.
+
+    Note: The library has auto-reconnection via keep_alive task, so we first
+    wait for automatic recovery before attempting manual reconnection.
+    """
+    # First check if connection appears healthy
+    if satel.connected:
+        _LOGGER.debug("Connection appears healthy after zone %s error", zone_number)
+        return True
+
+    _LOGGER.warning(
+        "Connection lost after zone %s temperature request - waiting for auto-recovery",
+        zone_number
+    )
+
+    # Connection is down - first wait for auto-recovery from keep_alive task
+    recovery_start = asyncio.get_event_loop().time()
+    auto_recovery_timeout = 60  # Wait 60 seconds for auto-recovery
+
+    while not satel.connected:
+        elapsed = asyncio.get_event_loop().time() - recovery_start
+
+        if elapsed > auto_recovery_timeout:
+            _LOGGER.warning(
+                "Auto-recovery timeout after %d seconds - attempting manual reconnection",
+                auto_recovery_timeout
+            )
+            break
+
+        _LOGGER.debug("Waiting for auto-recovery... (%.0fs elapsed)", elapsed)
+        await asyncio.sleep(5)
+
+    # Check if auto-recovery succeeded
+    if satel.connected:
+        _LOGGER.info("✅ Connection auto-recovered after zone %s error", zone_number)
+        await asyncio.sleep(5)  # Stabilize
+        return True
+
+    # Auto-recovery failed - attempt manual reconnection
+    _LOGGER.info("Attempting manual reconnection...")
+    try:
+        await satel.close()
+        await asyncio.sleep(2)
+        await satel.start(enable_monitoring=True)
+
+        # Wait for manual reconnection with remaining timeout
+        remaining_timeout = CONNECTION_RECOVERY_TIMEOUT - auto_recovery_timeout
+        recovery_start = asyncio.get_event_loop().time()
+
+        while not satel.connected:
+            if (asyncio.get_event_loop().time() - recovery_start) > remaining_timeout:
+                _LOGGER.error(
+                    "Manual reconnection timeout after %d seconds - giving up",
+                    remaining_timeout
+                )
+                return False
+
+            _LOGGER.debug("Waiting for manual reconnection...")
+            await asyncio.sleep(5)
+
+        _LOGGER.info("✅ Connection manually recovered after zone %s error", zone_number)
+        await asyncio.sleep(5)  # Stabilize
+        return True
+
+    except Exception as ex:
+        _LOGGER.error("Failed to recover connection: %s", ex)
+        return False
+
 
 async def _temperature_polling_task(
     hass: HomeAssistant,
@@ -70,9 +145,14 @@ async def _temperature_polling_task(
                 # Check if connection is healthy before requesting
                 if not sensor._satel.connected:
                     _LOGGER.warning(
-                        "Connection lost during temperature polling - stopping cycle"
+                        "Connection lost during temperature polling - attempting recovery"
                     )
-                    break
+                    # Attempt to recover connection
+                    if await _verify_and_recover_connection(sensor._satel, sensor._zone_number):
+                        _LOGGER.info("Connection recovered - continuing temperature polling")
+                    else:
+                        _LOGGER.error("Failed to recover connection - stopping temperature polling cycle")
+                        break
 
                 try:
                     _LOGGER.debug(
@@ -111,9 +191,17 @@ async def _temperature_polling_task(
                     )
                     # Disable polling for this sensor
                     sensor._temperature_enabled = False
-                    # Give connection extra time to recover after timeout
-                    _LOGGER.debug("Pausing 30 seconds after timeout to allow connection recovery")
-                    await asyncio.sleep(30)
+
+                    # Verify connection health and attempt recovery if needed
+                    _LOGGER.info("Verifying connection health after timeout...")
+                    if await _verify_and_recover_connection(sensor._satel, sensor._zone_number):
+                        _LOGGER.info("Connection verified/recovered - continuing with next zone")
+                    else:
+                        _LOGGER.error(
+                            "Failed to recover connection after zone %s timeout - stopping temperature polling cycle",
+                            sensor._zone_number
+                        )
+                        break
 
                 except Exception as ex:
                     _LOGGER.warning(
@@ -121,8 +209,17 @@ async def _temperature_polling_task(
                         sensor._zone_number,
                         ex,
                     )
-                    # Give connection time to recover after error
-                    await asyncio.sleep(30)
+
+                    # Verify connection health and attempt recovery if needed
+                    _LOGGER.info("Verifying connection health after error...")
+                    if await _verify_and_recover_connection(sensor._satel, sensor._zone_number):
+                        _LOGGER.info("Connection verified/recovered - continuing with next zone")
+                    else:
+                        _LOGGER.error(
+                            "Failed to recover connection after zone %s error - stopping temperature polling cycle",
+                            sensor._zone_number
+                        )
+                        break
 
                 # Wait before next request to avoid overwhelming connection
                 await asyncio.sleep(TEMPERATURE_REQUEST_DELAY)
