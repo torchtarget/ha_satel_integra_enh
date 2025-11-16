@@ -96,17 +96,26 @@ class SatelIntegraEntity(Entity):
             )
             return
 
-        # Get the device from registry
+        # Get the device from registry using device identifiers (not entity unique_id)
+        # For temperature sensors, entity unique_id differs from device identifier
         device_reg = dr.async_get(self.hass)
-        device_entry = device_reg.async_get_device(
-            identifiers={(DOMAIN, self._attr_unique_id)}
-        )
+
+        # Extract device identifier from device_info (set in __init__)
+        device_identifiers = self._attr_device_info.get("identifiers")
+        if not device_identifiers:
+            _LOGGER.error(
+                "No device identifiers found for '%s'",
+                self._subentry.data[CONF_NAME],
+            )
+            return
+
+        device_entry = device_reg.async_get_device(identifiers=device_identifiers)
 
         if not device_entry:
             _LOGGER.error(
-                "Device not found in registry for '%s' (unique_id: %s)",
+                "Device not found in registry for '%s' (identifiers: %s)",
                 self._subentry.data[CONF_NAME],
-                self._attr_unique_id,
+                device_identifiers,
             )
             return
 
