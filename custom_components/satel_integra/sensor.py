@@ -310,11 +310,22 @@ class SatelIntegraTemperatureSensor(SatelIntegraEntity, SensorEntity):
             zone_number,
         )
 
-        # Override unique_id to include _temperature suffix
+        # Override unique_id to include _temperature suffix (unique to this temperature sensor)
         self._attr_unique_id = f"{config_entry_id}_zone_{zone_number}_temperature"
 
-        # Override name to include "Temperature" suffix
-        self._attr_name = f"{subentry.data['name']} Temperature"
+        # Override device_info to use the SAME device as the binary sensor (zones_XX not zone_XX_temperature)
+        # This ensures both the binary sensor and temperature sensor appear under the same device
+        from homeassistant.helpers.device_registry import DeviceInfo
+        from .const import DOMAIN
+
+        binary_sensor_device_id = f"{config_entry_id}_zones_{zone_number}"
+        self._attr_device_info = DeviceInfo(
+            name=subentry.data['name'],
+            identifiers={(DOMAIN, binary_sensor_device_id)},
+        )
+
+        # Override name to just "Temperature" since device name already has the zone name
+        self._attr_name = "Temperature"
 
         self._zone_number = zone_number
         self._attr_native_value: float | None = None
